@@ -25,7 +25,21 @@ def strategy_function(asset):
     monthly_starts = months.head(1)
     monthly_ends = months.tail(1)
 
-    print(monthly_starts)
+    start = monthly_starts.reset_index()
+    end = monthly_ends.reset_index()
+
+    start['year_month'] = start['Date'].dt.to_period('M')
+    end['year_month'] = end['Date'].dt.to_period('M')
+
+    monthly_trades = pd.merge(start[['year_month','Date','Close']],
+                              end[['year_month','Date','Close']],
+                              on='year_month', suffixes=('_start','_end')).drop(columns='year_month')
+    print(monthly_trades)
+
+
+
+
+
 
     return asset
 main()
