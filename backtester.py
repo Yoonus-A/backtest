@@ -10,22 +10,22 @@ def main():
         end = "2018-01-01",
         progress = False
     )
-    # print(asset)
-    asset = asset.reset_index()
-
     asset = strategy_function(asset)
+
     return
 
 def strategy_function(asset):
     """
-    Dummy Trading strategy for testing :  Buy at the start of the month
-    Sell at the end of the month
+    Dummy Trading strategy for testing :  Buy at the first trading day of the month
+    Sell at the last trading day of the month
     """
-    Start = pd.Timestamp(year=2017, month=1, day=1)
-    buy_sell_df = pd.DataFrame({
-        "Start": pd.date_range(Start, periods=12, freq="MS"),
-        "End": pd.date_range(Start, periods=12, freq="M")
-    })
-    print(buy_sell_df)
+    asset.index = pd.to_datetime(asset.index)
+
+    months = asset.groupby([asset.index.year,asset.index.month])
+    monthly_starts = months.head(1)
+    monthly_ends = months.tail(1)
+
+    print(monthly_starts)
+
     return asset
 main()
