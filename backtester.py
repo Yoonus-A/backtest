@@ -10,9 +10,11 @@ def main():
         end = "2018-01-01",
         progress = False
     )
-    asset = strategy_function(asset)
-
+    data = strategy_function(asset)
+    data['Returns'] = calculate_returns(data)
+    print(data)
     return
+
 
 def strategy_function(asset):
     """
@@ -31,15 +33,12 @@ def strategy_function(asset):
     start['year_month'] = start['Date'].dt.to_period('M')
     end['year_month'] = end['Date'].dt.to_period('M')
 
+    # single df holding buy and sell points data
     monthly_trades = pd.merge(start[['year_month','Date','Close']],
                               end[['year_month','Date','Close']],
                               on='year_month', suffixes=('_start','_end')).drop(columns='year_month')
-    print(monthly_trades)
 
-
-
-
-
-
-    return asset
+    return monthly_trades
+def calculate_returns(df):
+    return (df['Close_end'] - df['Close_start']) / df['Close_start']
 main()
