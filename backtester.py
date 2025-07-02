@@ -4,15 +4,22 @@ import matplotlib.pyplot as plt
 
 
 def main():
+
+    """
+    runs backtest by getting stock data and applying strategy to it
+    :return:
+    """
     asset = yf.download(
         tickers = "AAPL",
         start = "2017-01-01",
         end = "2018-01-01",
         progress = False
     )
-    data = strategy_function(asset)
-    data['Returns'] = calculate_returns(data)
-    print(data)
+    asset['Returns'] = asset['Close'].pct_change()
+    asset_ret = (asset['Close'].loc['2017-12-29','AAPL'] - asset['Close'].loc['2017-01-03','AAPL']) / asset['Close'].loc['2017-01-03','AAPL']
+    strat_data = strategy_function(asset)
+    strat_data['Returns'] = calculate_returns(strat_data)
+    plot_cumulative_returns(strat_data, asset)
     return
 
 
@@ -20,6 +27,7 @@ def strategy_function(asset):
     """
     Dummy Trading strategy for testing :  Buy at the first trading day of the month
     Sell at the last trading day of the month
+
     """
     asset.index = pd.to_datetime(asset.index)
 
@@ -38,7 +46,24 @@ def strategy_function(asset):
                               end[['year_month','Date','Close']],
                               on='year_month', suffixes=('_start','_end')).drop(columns='year_month')
 
+    # index trades by date makes comparisons with asset simpler
+    monthly_trades.set_index('Date_end', inplace=True)
     return monthly_trades
+
+
 def calculate_returns(df):
     return (df['Close_end'] - df['Close_start']) / df['Close_start']
+
+
+# Plot cumulative returns of asset vs. strategy
+def plot_cumulative_returns(strat_data,asset):
+    strat_data_creturns = (1+strat_data['Returns']).cumprod()
+    asset_creturns = (1+asset['Returns']).cumprod()
+    # print(asset_creturns)
+    # print(strat_data)
+    # print(asset)
+
+    return
+
+
 main()
