@@ -1,6 +1,7 @@
 import yfinance as yf
 import pandas as pd
 import matplotlib.pyplot as plt
+import numpy as np
 
 
 def main():
@@ -15,10 +16,11 @@ def main():
         end = "2018-01-01",
         progress = False
     )
-    asset['Returns'] = asset['Close'].pct_change()
-    asset_ret = (asset['Close'].loc['2017-12-29','AAPL'] - asset['Close'].loc['2017-01-03','AAPL']) / asset['Close'].loc['2017-01-03','AAPL']
+
+    asset['Returns'] = asset['Close'].pct_change() # asset daily returns
     strat_data = strategy_function(asset)
-    strat_data['Returns'] = calculate_returns(strat_data)
+    strat_data = calculate_returns(strat_data)
+    # calculateMetrics(asset, strat_data)
     plot_cumulative_returns(strat_data, asset)
     return
 
@@ -48,16 +50,29 @@ def strategy_function(asset):
 
     # index trades by date makes comparisons with asset simpler
     monthly_trades.set_index('Date_end', inplace=True)
+
+    # calculate positions to take
+    monthly_trades['Position'] = np.where(
+        monthly_trades['Close_end'] > monthly_trades['Close_start'], 1,
+        np.where(monthly_trades['Close_end'] < monthly_trades['Close_start'], -1, 0)
+    )
     return monthly_trades
 
+'''
+def calculateMetrics(strat_data, asset_data):
+    rfr = 0.04 # risk-free rate
+'''
 
 def calculate_returns(df):
-    return (df['Close_end'] - df['Close_start']) / df['Close_start']
+    df['Returns'] = df['Close_end'].pct_change() # calculate returns
+    df['Strategy Returns'] = df['Returns'] * df['Position'].shift(1) # calculate strategy returns
+    return df
+
 
 
 # Plot cumulative returns of asset vs. strategy
 def plot_cumulative_returns(strat_data,asset):
-    strat_data_creturns = (1+strat_data['Returns']).cumprod()
+    strat_data_creturns = (1+strat_data['Strategy Returns']).cumprod()
     asset_creturns = (1+asset['Returns']).cumprod()
 
     plt.figure(figsize=(12,6))
@@ -68,9 +83,5 @@ def plot_cumulative_returns(strat_data,asset):
     plt.grid(True)
     plt.legend()
     plt.show()
-
-
     return
- 
-
 main()
