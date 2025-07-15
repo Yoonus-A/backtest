@@ -59,11 +59,18 @@ def calculate_returns(df):
 def plot_cumulative_returns(strat_data,asset):
     strat_data_creturns = (1+strat_data['Returns']).cumprod()
     asset_creturns = (1+asset['Returns']).cumprod()
-    # print(asset_creturns)
-    # print(strat_data)
-    # print(asset)
+
+    plt.figure(figsize=(12,6))
+    plt.plot(asset_creturns, label = 'Asset cumulative returns')
+    plt.plot(strat_data_creturns, label='Strategy cumulative returns')
+    plt.xlabel('Dates')
+    plt.ylabel('Cumulative returns')
+    plt.grid(True)
+    plt.legend()
+    plt.show()
+
 
     return
-
+ 
 
 main()
