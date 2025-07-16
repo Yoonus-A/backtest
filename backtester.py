@@ -20,7 +20,7 @@ def main():
     asset['Returns'] = asset['Close'].pct_change() # asset daily returns
     strat_data = strategy_function(asset)
     strat_data = calculate_returns(strat_data)
-    # calculateMetrics(asset, strat_data)
+    calculateMetrics(asset, strat_data)
     plot_cumulative_returns(strat_data, asset)
     return
 
@@ -58,10 +58,17 @@ def strategy_function(asset):
     )
     return monthly_trades
 
-'''
-def calculateMetrics(strat_data, asset_data):
-    rfr = 0.04 # risk-free rate
-'''
+
+def calculateMetrics(asset_data, strat_data):
+    rfr = 0.04 # annual risk-free rate
+    d_rfr = rfr / len(strat_data['Position'].dropna().values) # daily rfr
+    mean_returns = np.mean(strat_data['Strategy Returns'].dropna().values)
+    std_dev = np.std(strat_data['Strategy Returns'])
+    sharpe_ratio = ((mean_returns - d_rfr) / std_dev) * np.sqrt(len(strat_data['Position'].dropna().values))
+    print(sharpe_ratio)
+
+
+
 
 def calculate_returns(df):
     df['Returns'] = df['Close_end'].pct_change() # calculate returns
