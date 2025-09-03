@@ -65,14 +65,19 @@ def calculateMetrics(asset_data, strat_data):
     mean_strategy_returns = np.mean(strat_data['Strategy Returns'].dropna().values)
     std_dev = np.std(strat_data['Strategy Returns'])
     sharpe_ratio = ((mean_strategy_returns - d_rfr) / std_dev) * np.sqrt(len(strat_data['Position'].dropna().values))
+    volatility = strat_data['Returns'].dropna().std() * np.sqrt(len(strat_data['Position'].dropna().values))
+    print(len(strat_data['Position'].dropna().values))
 
     mean_returns = np.mean(asset_data['Returns'].dropna().values)
     std_dev_asset = np.std(asset_data['Returns'])
     asset_sharpe_ratio = ((mean_returns - (rfr / 252)) / std_dev_asset) * np.sqrt(252)
+    asset_volatility = std_dev_asset * np.sqrt(252)
 
     print(f"Strategy Returns sharpe ratio: {sharpe_ratio}")
+    print(f"Strategy Volatility: {volatility}")
+    print(" ")
     print(f"Asset Returns sharpe ratio: {asset_sharpe_ratio}")
-
+    print(f"Asset Volatility: {asset_volatility}")
 
 
 
