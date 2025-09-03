@@ -62,10 +62,17 @@ def strategy_function(asset):
 def calculateMetrics(asset_data, strat_data):
     rfr = 0.04 # annual risk-free rate
     d_rfr = rfr / len(strat_data['Position'].dropna().values) # daily rfr
-    mean_returns = np.mean(strat_data['Strategy Returns'].dropna().values)
+    mean_strategy_returns = np.mean(strat_data['Strategy Returns'].dropna().values)
     std_dev = np.std(strat_data['Strategy Returns'])
-    sharpe_ratio = ((mean_returns - d_rfr) / std_dev) * np.sqrt(len(strat_data['Position'].dropna().values))
-    print(sharpe_ratio)
+    sharpe_ratio = ((mean_strategy_returns - d_rfr) / std_dev) * np.sqrt(len(strat_data['Position'].dropna().values))
+
+    mean_returns = np.mean(asset_data['Returns'].dropna().values)
+    std_dev_asset = np.std(asset_data['Returns'])
+    asset_sharpe_ratio = ((mean_returns - (rfr / 252)) / std_dev_asset) * np.sqrt(252)
+
+    print(f"Strategy Returns sharpe ratio: {sharpe_ratio}")
+    print(f"Asset Returns sharpe ratio: {asset_sharpe_ratio}")
+
 
 
 
