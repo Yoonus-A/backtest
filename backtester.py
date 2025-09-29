@@ -2,6 +2,7 @@ import yfinance as yf
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+from strategies import smaCrossover, monthlyMomentum
 
 
 def main():
@@ -18,7 +19,7 @@ def main():
     )
 
     asset['Returns'] = asset['Close'].pct_change() # asset daily returns
-    strat_data = strategy_function(asset)
+    strat_data = monthlyMomentum(asset)
     strat_data = calculate_returns(strat_data)
     calculateMetrics(asset, strat_data)
     plot_cumulative_returns(strat_data, asset)
@@ -66,7 +67,6 @@ def calculateMetrics(asset_data, strat_data):
     std_dev = np.std(strat_data['Strategy Returns'])
     sharpe_ratio = ((mean_strategy_returns - d_rfr) / std_dev) * np.sqrt(len(strat_data['Position'].dropna().values))
     volatility = strat_data['Returns'].dropna().std() * np.sqrt(len(strat_data['Position'].dropna().values))
-    print(len(strat_data['Position'].dropna().values))
 
     mean_returns = np.mean(asset_data['Returns'].dropna().values)
     std_dev_asset = np.std(asset_data['Returns'])
@@ -83,11 +83,15 @@ def calculateMetrics(asset_data, strat_data):
 
 
 def calculate_returns(df):
-    df['Returns'] = df['Close_end'].pct_change() # calculate returns
-    df['Strategy Returns'] = df['Returns'] * df['Position'].shift(1) # calculate strategy returns
+
+    if 'Returns' not in df.columns:
+        df['Returns'] = df['Close'].pct_change() # calculate returns if the column does not exist
+    #print(df['Returns'])
+    df['Strategy Returns'] = df['Returns'].dropna() * df['Position'].shift(1) # calculate strategy returns
+    #print(df['Close'])
+    #print(df['Position'])
+    #print(df['Strategy Returns'])
     return df
-
-
 
 # Plot cumulative returns of asset vs. strategy
 def plot_cumulative_returns(strat_data,asset):
