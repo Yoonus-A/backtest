@@ -28,41 +28,6 @@ def main():
     plot_cumulative_returns(strat_data, asset)
     return
 
-
-def strategy_function(asset):
-    """
-    Dummy Trading strategy for testing :  Buy at the first trading day of the month
-    Sell at the last trading day of the month
-
-    """
-    asset.index = pd.to_datetime(asset.index)
-
-    months = asset.groupby([asset.index.year,asset.index.month])
-    monthly_starts = months.head(1)
-    monthly_ends = months.tail(1)
-
-    start = monthly_starts.reset_index()
-    end = monthly_ends.reset_index()
-
-    start['year_month'] = start['Date'].dt.to_period('M')
-    end['year_month'] = end['Date'].dt.to_period('M')
-
-    # single df holding buy and sell points data
-    monthly_trades = pd.merge(start[['year_month','Date','Close']],
-                              end[['year_month','Date','Close']],
-                              on='year_month', suffixes=('_start','_end')).drop(columns='year_month')
-
-    # index trades by date makes comparisons with asset simpler
-    monthly_trades.set_index('Date_end', inplace=True)
-
-    # calculate positions to take
-    monthly_trades['Position'] = np.where(
-        monthly_trades['Close_end'] > monthly_trades['Close_start'], 1,
-        np.where(monthly_trades['Close_end'] < monthly_trades['Close_start'], -1, 0)
-    )
-    return monthly_trades
-
-
 def calculateMetrics(asset_data, strat_data):
     rfr = 0.04 # annual risk-free rate
     d_rfr = rfr / len(strat_data['Position'].dropna().values) # daily rfr
