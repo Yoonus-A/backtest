@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 
 
+
 def smaCrossover(asset):
     """
     Moving avg crossover strategy
@@ -10,9 +11,8 @@ def smaCrossover(asset):
 
     asset['SMA20'] = asset['Close'].rolling(window=20).mean()
     asset['SMA50'] = asset['Close'].rolling(window=50).mean()
+    asset['Position'] = np.where(asset['SMA20'] > asset['SMA50'], 1,0)
 
-    asset['Position'] = np.where(asset['SMA20'] > asset['SMA50'], 1,-1)
-    asset['Position'] = asset['Position'].replace(to_replace=0, method='ffill')
     return asset
 
 def monthlyMomentum(asset):
