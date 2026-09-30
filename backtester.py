@@ -1,81 +1,61 @@
-import yfinance as yf
+import sys
 import pandas as pd
+import yfinance as yf
 import matplotlib.pyplot as plt
-import numpy as np
 
-from strategies import smaCrossover, monthlyMomentum
+from strategies import STRATEGIES
+from engine import run_backtest, metrics
 
 
-
-def main():
-
-    """
-    runs backtest by getting stock data and applying strategy to it
-    :return:
-    """
-    asset = yf.download(
-        tickers = "AAPL",
-        start = "2017-01-01",
-        end = "2018-01-01",
-        progress = False
+def get_close(ticker: str, start: str, end: str) -> pd.Series:
+    """Download adjusted close prices for one ticker."""
+    data = yf.download(
+        tickers=ticker,
+        start=start,
+        end=end,
+        progress=False,
+        multi_level_index=False,   # keeps 'Close' as a Series, not a DataFrame
     )
-
-    asset['Returns'] = asset['Close'].pct_change() # asset daily returns
-    strat_data = monthlyMomentum(asset)
-
-    strat_data = calculate_returns(strat_data)
-    calculateMetrics(asset, strat_data)
-    plot_cumulative_returns(strat_data, asset)
-    return
-
-def calculateMetrics(asset_data, strat_data):
-    rfr = 0.04 # annual risk-free rate
-    d_rfr = rfr / len(strat_data['Position'].dropna().values) # daily rfr
-    mean_strategy_returns = np.mean(strat_data['Strategy Returns'].dropna().values)
-    std_dev = np.std(strat_data['Strategy Returns'])
-    sharpe_ratio = ((mean_strategy_returns - d_rfr) / std_dev) * np.sqrt(len(strat_data['Position'].dropna().values))
-    volatility = strat_data['Returns'].dropna().std() * np.sqrt(len(strat_data['Position'].dropna().values))
+    if data.empty:
+        raise ValueError(f"No data returned for '{ticker}'. Check the ticker and dates.")
+    close = data["Close"].copy()
+    close.index = pd.to_datetime(close.index)
+    return close
 
 
-
-    mean_returns = np.mean(asset_data['Returns'].dropna().values)
-    std_dev_asset = np.std(asset_data['Returns'])
-    asset_sharpe_ratio = ((mean_returns - (rfr / 252)) / std_dev_asset) * np.sqrt(252)
-    asset_volatility = std_dev_asset * np.sqrt(252)
-
-    print(f"Strategy Returns sharpe ratio: {sharpe_ratio}")
-    print(f"Strategy Volatility: {volatility}")
-    print(" ")
-    print(f"Asset Returns sharpe ratio: {asset_sharpe_ratio}")
-    print(f"Asset Volatility: {asset_volatility}")
+def run(ticker, start, end, strategy_name, params=None, cost_bps=5):
+    """Does the whole backtest and returns results"""
+    params = params or {}
+    close = get_close(ticker, start, end)
+    position = STRATEGIES[strategy_name](close, **params)
+    results = run_backtest(close, position, cost_bps=cost_bps)
+    stats = pd.DataFrame({col: metrics(results[col]) for col in results.columns})
+    return results, stats
 
 
-
-
-def calculate_returns(df):
-
-    if 'Returns' not in df.columns:
-        df['Returns'] = df['Close'].pct_change() # calculate returns if the column does not exist
-    #print(df['Returns'])
-    df['Strategy Returns'] = df['Returns'].dropna() * df['Position'].shift(1) # calculate strategy returns
-    #print(df['Close'])
-    #print(df['Position'])
-    #print(df['Strategy Returns'])
-
-    return df
-
-# Plot cumulative returns of asset vs. strategy
-def plot_cumulative_returns(strat_data,asset):
-    strat_data_creturns = (1+strat_data['Strategy Returns']).cumprod()
-    asset_creturns = (1+asset['Returns']).cumprod()
-
-    plt.figure(figsize=(12,6))
-    plt.plot(asset_creturns, label = 'Asset cumulative returns')
-    plt.plot(strat_data_creturns, label='Strategy cumulative returns')
-    plt.xlabel('Dates')
-    plt.ylabel('Cumulative returns')
+def plot_cumulative_returns(results: pd.DataFrame, title: str = ""):
+    """Plot c returns visualising return movements through set time"""
+    cumulative = (1 + results).cumprod()
+    plt.figure(figsize=(12, 6))
+    plt.plot(cumulative["Asset"], label="Asset cumulative returns")
+    plt.plot(cumulative["Strategy"], label="Strategy cumulative returns")
+    plt.title(title)
+    plt.xlabel("Date")
+    plt.ylabel("Growth of 1")
     plt.grid(True)
     plt.legend()
     plt.show()
-    return
-main()
+
+
+def main():
+    ticker = "NFLX"
+    strategy = "SMA crossover"          # or "Monthly momentum"
+    params = {"fast": 20, "slow": 50}   # for monthly momentum: {"lookback": 1}
+
+    results, stats = run(ticker, "2017-01-01", "2024-01-01", strategy, params, cost_bps=5)
+
+    print(stats.round(4))
+    plot_cumulative_returns(results, f"{ticker}: {strategy}")
+
+if __name__ == "__main__":
+    main()
